@@ -7,6 +7,7 @@ const app = express();
 const http = require("http");
 const server = http.createServer(app);
 const io = require("socket.io")(server);
+const Filter = require("bad-words");
 
 // Serving static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -17,8 +18,21 @@ io.on("connection", (socket) => {
 
     socket.broadcast.emit("message", "User joined");
 
-    socket.on("sendMessage", (message) => {
+    socket.on("sendMessage", (message, callback) => {
+        const filter = new Filter();
+        if (filter.isProfane(message)) {
+            return callback("Bad words are not allowed");
+        }
         io.emit("message", message);
+        callback();
+    });
+
+    socket.on("sendLocation", (coords, callback) => {
+        if (!coords) {
+            return callback("Location sharing failed");
+        }
+        io.emit("message", `https://www.google.com/maps?q=${coords.latitude},${coords.longitude}`);
+        callback();
     });
 
     socket.on("disconnect", () => {
