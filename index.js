@@ -10,7 +10,6 @@ const io = require("socket.io")(server);
 const Filter = require("bad-words");
 const { generateMessage, generateLocationMessage } = require("./utils/messages");
 const { addUser, removeUser, getUser, getUsersInRoom } = require("./utils/users");
-const { url } = require("inspector");
 
 // Serving static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -24,11 +23,14 @@ io.on("connection", (socket) => {
         if (error) {
             return callback(error);
         }
-
         socket.join(user.room);
         socket.emit("message", generateMessage("Admin", "Welcome!"));
         socket.broadcast.to(user.room)
             .emit("message", generateMessage("Admin", `${user.username} joined`));
+        io.to(room).emit("roomData", {
+            room,
+            users: getUsersInRoom(room)
+        });
         callback();
     });
 
@@ -60,8 +62,14 @@ io.on("connection", (socket) => {
 
     socket.on("disconnect", () => {
         const user = removeUser(socket.id);
-        if (user)
-            io.to(user.room).emit("message", generateMessage("Admin", `${user.username} left`));
+        if (user) {
+            const { username, room } = user;
+            io.to(room).emit("message", generateMessage("Admin", `${username} left`));
+            io.to(room).emit("roomData", {
+                room,
+                users: getUsersInRoom(user.room)
+            });
+        }
     });
 });
 

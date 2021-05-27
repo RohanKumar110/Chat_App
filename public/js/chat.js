@@ -1,5 +1,6 @@
 const socket = io();
 // Elements
+const $sidebar = document.querySelector("#sidebar");
 const $messageForm = document.querySelector("#message-form");
 const $messageFormInput = document.querySelector("#message");
 const $messageFormButton = document.querySelector("button");
@@ -9,6 +10,7 @@ const $messageContainer = document.querySelector("#message-container");
 // Templates
 const messageTemplate = document.querySelector("#message-template").innerHTML;
 const locationTemplate = document.querySelector("#location-template").innerHTML;
+const sidebarTemplate = document.querySelector("#sidebar-template").innerHTML;
 
 // Options
 const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true });
@@ -31,6 +33,13 @@ socket.on("locationMessage", (location) => {
         createdAt: moment(createdAt).format("h:mm A")
     });
     $messageContainer.insertAdjacentHTML("beforeend", locationMessage);
+});
+
+socket.on("roomData", ({ room, users }) => {
+    const userlist = Mustache.render(sidebarTemplate, {
+        room, users
+    });
+    $sidebar.innerHTML = userlist;
 });
 
 const sendMessage = () => {
