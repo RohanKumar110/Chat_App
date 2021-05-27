@@ -10,27 +10,31 @@ const $messageContainer = document.querySelector("#message-container");
 const messageTemplate = document.querySelector("#message-template").innerHTML;
 const locationTemplate = document.querySelector("#location-template").innerHTML;
 
+// Options
+const { username, room } = Qs.parse(location.search, { ignoreQueryPrefix: true });
 
 socket.on("message", (message) => {
-    const { text, createdAt } = message;
+    const { text, username, createdAt } = message;
     const newMessage = Mustache.render(messageTemplate, {
         text,
+        username,
         createdAt: moment(createdAt).format("h:mm A")
     });
     $messageContainer.insertAdjacentHTML("beforeend", newMessage);
 });
 
 socket.on("locationMessage", (location) => {
-    const { url, createdAt } = location;
+    const { url, username, createdAt } = location;
     const locationMessage = Mustache.render(locationTemplate, {
         url,
+        username,
         createdAt: moment(createdAt).format("h:mm A")
     });
     $messageContainer.insertAdjacentHTML("beforeend", locationMessage);
 });
 
 const sendMessage = () => {
-    const message = form.message.value;
+    const message = $messageForm.message.value;
     socket.emit("sendMessage", message, error => {
         // Enabling the form button and clear the input after acknowledgement
         $messageFormButton.removeAttribute("disabled");
@@ -75,4 +79,11 @@ $locationBtn.addEventListener("click", function () {
     // / Disabling the button while fetching the location
     this.setAttribute("disabled", "disabled");
     sendLocation();
+});
+
+socket.emit("join", { username, room }, (error) => {
+    if (error) {
+        alert(error);
+        location.href = "/"
+    }
 });
